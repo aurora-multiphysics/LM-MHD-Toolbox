@@ -141,6 +141,7 @@ class HuntII:
                 h3 = self.h3k(r2_k, eta_val, term3_k_constant)
                 hEta_k[n] = self.hEtak(h2, h3)
 
+            # compute outer product of orthogonal components
             v_k = np.outer(vXi_k, vEta_k)
             h_k = np.outer(hXi_k, hEta_k)
 
