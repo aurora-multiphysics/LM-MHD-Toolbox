@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-"""
-Created on Mon Nov 21 16:03:11 2022
-
-@author: rupert
-"""
-
 import numpy as np
 import mhdtools as mhd
 
