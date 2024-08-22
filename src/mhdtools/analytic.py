@@ -164,6 +164,7 @@ class HuntII:
         self.v = v
         self.h = h
         self.Q = Q
+        self.average_velocity = self.Q / (4 * self.l_ratio)
 
     def alphak(self, k):
         alpha_k = (k + 0.5) * np.pi / self.l_ratio
@@ -264,27 +265,50 @@ class HuntII:
         Q_Eta_component_k = 2 - Q_v2 - Q_v3
         return Q_Eta_component_k
 
+    def set_scaled_pressure_drop(self, scaled_pressure_drop):
+        if self.scaling_constraint:
+            raise Exception(
+                "Cannot set scaled_pressure_drop if "
+                "scaled_average_velocity is already set"
+            )
+        self.scaling_constraint = "Set Pressure Drop"
+        self.scaled_pressure_drop = scaled_pressure_drop
+        self.scaled_average_velocity = (
+            self.average_velocity * scaled_pressure_drop * (self.a**2 / self.dyn_visc)
+        )
+
+    def set_scaled_average_velocity(self, scaled_average_velocity):
+        if self.scaling_constraint:
+            raise Exception(
+                "Cannot set scaled_average_velocity if "
+                "scaled_pressure_drop is already set"
+            )
+        self.scaling_constraint = "Set Average Velocity"
+        self.scaled_average_velocity = scaled_average_velocity
+        self.scaled_pressure_drop = (
+            self.scaled_average_velocity / self.average_velocity
+        ) * (self.dyn_visc / self.a**2)
+
     def calculate_scaled_fields(self):
-        self.calculate_pressure_drop()
+        if not self.scaling_constraint:
+            raise Exception(
+                "Cannot calculate scaled fields until either "
+                "set_scaled_average_velocity "
+                "or set_scaled_pressure_drop has been called."
+            )
         self.calculate_scaled_velocity()
         self.calculate_scaled_H_field()
         self.calculate_scaled_B_field()
 
-    def calculate_pressure_drop(self):
-        self.average_V = self.Q / (4 * self.l_ratio)
-        self.pressure_drop_K = (self.average_velocity / self.average_V) * (
-            self.dyn_visc / (self.a**2)
-        )
-
     def calculate_scaled_velocity(self):
         self.scaled_velocity_z = (
-            self.v * self.pressure_drop_K * (self.a**2) / self.dyn_visc
+            self.v * self.scaled_pressure_drop * (self.a**2) / self.dyn_visc
         )
 
     def calculate_scaled_H_field(self):
         self.scaled_H_field_z = (
             self.h
-            * self.pressure_drop_K
+            * self.scaled_pressure_drop
             * self.a**2
             * np.sqrt(self.conductivity / self.dyn_visc)
         )
