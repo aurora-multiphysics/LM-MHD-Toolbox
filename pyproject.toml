@@ -17,5 +17,6 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "mhdtools/analytic"
+    "mhdtools/analytic",
+    "mhdtools/paraview_interface"
 ]
