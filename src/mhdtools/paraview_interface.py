@@ -69,13 +69,12 @@ def file_read_cartesian_2D(
     if dataNumCols == 1:
         data = full_data[:, dataCols]
         data = np.reshape(data, shape)
-        data = np.transpose(data)
     else:
         data = []
         for i in range(dataNumCols):
             data_column = full_data[:, dataCols[i]]
             data_column = np.reshape(data_column, shape)
             data.append([])
-            data[i] = np.transpose(data_column)
+            data[i] = data_column
 
     return x, y, data
