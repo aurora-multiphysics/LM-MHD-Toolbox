@@ -34,7 +34,6 @@ class HuntII:
         dyn_visc,
         conductivity,
         permeability,
-        average_velocity,
     ):
         """Constructs the necessary attributes for the HuntII object.
 
@@ -62,8 +61,6 @@ class HuntII:
             Fluid conductivity.
         permeability : float
             Fluid permeability.
-        average_velocity : float
-            Average velocity along z-axis.
 
 
         Returns
@@ -84,12 +81,13 @@ class HuntII:
         self.dyn_visc = dyn_visc
         self.conductivity = conductivity
         self.permeability = permeability
-        self.average_velocity = average_velocity
 
         self.l_ratio = self.b / self.a
         self.xXi = [x_val / self.a for x_val in self.x]
         self.yEta = [y_val / self.a for y_val in self.y]
         self.xyShape = (len(self.x), len(self.y))
+
+        self.scaling_constraint = None
 
     def analytic_solve(self):
         k_list = list(range(0, self.num_k_points))
