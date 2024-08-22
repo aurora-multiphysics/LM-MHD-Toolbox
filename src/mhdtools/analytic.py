@@ -14,6 +14,12 @@ class HuntII:
     this solution generalises to the Shercliff solution for perfectly insulating
     Hartmann and side walls, originally derived in Shercliff J A 1953
     Math. Proc. Camb. Phil. Soc. 49 136-44
+
+    The magnetic field is applied in the y direction, with Hartmann walls of length 2b
+    and side walls of length 2a such that -b<x<b, -a<y<a. Flow is in the positive z
+    direction, and the analytic solution gives the velocity and induced magnetic field
+    z-components, with x and y components of both equal to zero, as well as the
+    pressure drop in the z direction.
     """
 
     def __init__(
@@ -37,9 +43,9 @@ class HuntII:
         Ha : int or float
             Hartmann Number.
         a : int or float
-            Side wall half-height (x-axis).
+            Side wall half-height (y-axis).
         b : int or float
-            Hartmann wall half-width (y-axis).
+            Hartmann wall half-width (x-axis).
         dB : int, float or np.inf
             Hartmann wall conduction ratio, (t_w*sigma_w)/(a*sigma),
             where t_w is wall thickness, sigma_w is wall conductivity,
