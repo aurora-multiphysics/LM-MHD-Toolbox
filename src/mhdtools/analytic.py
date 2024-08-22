@@ -87,9 +87,12 @@ class HuntII:
         self.yEta = [y_val / self.a for y_val in self.y]
         self.xyShape = (len(self.x), len(self.y))
 
-        self.scaling_constraint = None
+        self._scaling_constraint = None
+        self._solved = False
 
     def analytic_solve(self):
+        """Calculate the nondimensional velocity, magnetic field,
+        flow rate and average velocity."""
         k_list = list(range(0, self.num_k_points))
         v = np.zeros(self.xyShape)
         h = np.zeros(self.xyShape)
@@ -163,6 +166,7 @@ class HuntII:
         self.h = h
         self.Q = Q
         self.average_velocity = self.Q / (4 * self.l_ratio)
+        self._solved = True
 
     def _alphak(self, k):
         alpha_k = (k + 0.5) * np.pi / self.l_ratio
@@ -264,31 +268,81 @@ class HuntII:
         return Q_Eta_component_k
 
     def set_scaled_pressure_drop(self, scaled_pressure_drop):
-        if self.scaling_constraint:
+        """Set a dimensional pressure drop to constrain scaling of analytic solution.
+
+        Parameters
+        ----------
+        scaled_pressure_drop : float
+            Dimensional pressure drop (-dp/dz), e.g. in simulation units.
+
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaled_average_velocity has been set
+        """
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before scaled results can be obtained."
+            )
+        if self._scaling_constraint:
             raise Exception(
                 "Cannot set scaled_pressure_drop if "
                 "scaled_average_velocity is already set"
             )
-        self.scaling_constraint = "Set Pressure Drop"
+        self._scaling_constraint = "Set Pressure Drop"
         self.scaled_pressure_drop = scaled_pressure_drop
         self.scaled_average_velocity = (
             self.average_velocity * scaled_pressure_drop * (self.a**2 / self.dyn_visc)
         )
 
     def set_scaled_average_velocity(self, scaled_average_velocity):
-        if self.scaling_constraint:
+        """Set a dimensional average velocity to constrain scaling of analytic solution.
+
+        Parameters
+        ----------
+        scaled_average_velocity : float
+            Dimensional average velocity, e.g. in simulation units.
+
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaled_pressure_drop has been set
+        """
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before scaled results can be obtained."
+            )
+
+        if self._scaling_constraint:
             raise Exception(
                 "Cannot set scaled_average_velocity if "
                 "scaled_pressure_drop is already set"
             )
-        self.scaling_constraint = "Set Average Velocity"
+        self._scaling_constraint = "Set Average Velocity"
         self.scaled_average_velocity = scaled_average_velocity
         self.scaled_pressure_drop = (
             self.scaled_average_velocity / self.average_velocity
         ) * (self.dyn_visc / self.a**2)
 
-    def calculate_scaled_fields(self):
-        if not self.scaling_constraint:
+    def calculate_scaled_solution(self):
+        """Calculate scaled solution a previously set scaling constraint.
+
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaling constraint not set
+        """
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before scaled results can be obtained."
+            )
+        if not self._scaling_constraint:
             raise Exception(
                 "Cannot calculate scaled fields until either "
                 "set_scaled_average_velocity "
