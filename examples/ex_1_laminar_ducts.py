@@ -36,16 +36,20 @@ shercliff_case = mhdtools.analytic.HuntII(
     dyn_visc,
     conductivity,
     permeability,
-    average_velocity,
 )
 
 # Solve the case
 shercliff_case.analytic_solve()
 
+# Constrain average velocity
+
+shercliff_case.set_scaled_average_velocity(average_velocity)
+
 # Calculate scaled fields
-shercliff_case.calculate_scaled_fields()
+shercliff_case.calculate_scaled_solution()
 shercliff_case_uz = shercliff_case.scaled_velocity_z
-shercliff_case_K = shercliff_case.pressure_drop_K
+shercliff_case_bz = shercliff_case.scaled_B_field_z
+shercliff_case_K = shercliff_case.scaled_pressure_drop
 
 plt.imshow(shercliff_case_uz)
 print("Pressure Drop K = %f Pa/m" % shercliff_case_K)
