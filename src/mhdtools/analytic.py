@@ -1,5 +1,4 @@
 import numpy as np
-import mhdtools as mhd
 
 
 class HuntII:

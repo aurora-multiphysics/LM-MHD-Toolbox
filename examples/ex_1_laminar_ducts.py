@@ -1,4 +1,5 @@
-import mhdtools as mhd
+import mhdtools
+import mhdtools.analytic
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,7 +10,7 @@ b = 1  # width
 N_x = 501  # num points in width
 N_y = 501  # num points in height
 
-x, y = mhd.analytic.makeXYVectors(N_x, N_y, a, b)
+x, y = mhdtools.analytic.makeXYVectors(N_x, N_y, a, b)
 
 # Define Shercliff flow (insulating walls) case
 # Based on HuntII case (side walls are always perfectly insulating)
@@ -24,7 +25,7 @@ permeability = 1  # Fluid permeability
 average_velocity = 1  # Average flow velocity
 
 # Create the case
-shercliff_case = mhd.analytic.HuntII(
+shercliff_case = mhdtools.analytic.HuntII(
     Ha,
     a,
     b,
