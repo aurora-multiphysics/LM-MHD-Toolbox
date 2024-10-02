@@ -18,3 +18,5 @@ This package can be downloaded using
 To install the package in the virtual environment, navigate to `LM-MHD-Toolbox` with the environment active, and run
 
 ```pip install .```
+
+This can instead be installed in development mode using `pip install -e `, to allow the user to modify this package without needing to reinstall it after each change.
