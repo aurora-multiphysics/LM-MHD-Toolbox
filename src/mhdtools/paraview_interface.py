@@ -1,6 +1,97 @@
 import numpy as np
 
 
+def file_read_2D(
+    file,
+    xCol,
+    yCol,
+    dataCols,
+    delimiter=",",
+    skiprows=0,
+    xmin=None,
+    xmax=None,
+    ymin=None,
+    ymax=None,
+):
+    """Read a 2D slice with an arbitrary grid from file e.g. .csv,
+    and return x, y and data lists, where data is either a list of
+    scalars or a list of lists of scalars.
+
+    Parameters
+    ----------
+    file : str
+        Name of file to read
+    shape : tuple (int, int)
+        _description_
+    xCol : int
+        Column number of x coordinates
+    yCol : int
+        Column number of y coordinates
+    dataCols : int or list of int
+        Column number for data fields to extract, or list of column numbers for multiple fields.
+    delimiter : str, optional
+        File column delimiter, by default ","
+    skiprows : int, optional
+        Number of rows to skip when reading file, by default 0
+    xmin : float, optional
+        If defined, discard all points where x < xmin
+    xmax : float, optional
+        If defined, discard all points where x > xmax
+    ymin : float, optional
+        If defined, discard all points where y < ymin
+    ymax : float, optional
+        If defined, discard all points where y > ymax
+
+
+    Returns
+    -------
+    x : list of float
+        1D list of x coordinates
+    y : list of float
+        1D list of y coordinates
+    data : list of float, or list of list of float
+        1D list of data
+    """
+
+    if type(dataCols) is not list:
+        dataNumCols = 1
+    else:
+        dataNumCols = len(dataCols)
+
+    full_data = np.loadtxt(file, skiprows=1, delimiter=",")
+
+    # optionally mask out parts of the domain
+    row_ids = range(np.shape(full_data)[0])
+    delete_list = []
+    for row_id in row_ids:
+        x = full_data[row_id, xCol]
+        y = full_data[row_id, yCol]
+        if (
+            (xmin and x < xmin)
+            or (xmax and x > xmax)
+            or (ymin and y < ymin)
+            or (ymax and y > ymax)
+        ):
+            delete_list.append(row_id)
+    full_data = np.delete(full_data, delete_list, axis=0)
+
+    # extract 1D arrays of all points from specified columns
+    x = full_data[:, xCol]
+    y = full_data[:, yCol]
+
+    # get the data
+    if dataNumCols == 1:
+        data = full_data[:, dataCols]
+    else:
+        data = []
+        for i in range(dataNumCols):
+            data_column = full_data[:, dataCols[i]]
+            data.append([])
+            data[i] = data_column
+
+    return x, y, data
+
+
 def file_read_cartesian_2D(
     file,
     shape,
@@ -97,7 +188,7 @@ def file_read_cartesian_2D(
 
     # reshape into 2D grids (rows with varying x, columns with varying y)
     if shape_order == "xy":
-        yx_shape = shape[::-1] # reverse the shape
+        yx_shape = shape[::-1]  # reverse the shape
     elif shape_order == "yx":
         yx_shape = shape
     else:
