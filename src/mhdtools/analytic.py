@@ -50,9 +50,9 @@ class HuntII:
             and sigma is fluid conductivity.
         num_k_points : int
             Number of Fourier iterations.
-        x : list or numpy array
+        x : float, list or 1D numpy array
             x-axis points (-b<=x<=b, order ascending).
-        y : list or numpy array
+        y : float, list or 1D numpy array
             y-axis points (-a<=y<=a, order ascending).
         dyn_visc : float
             Dynamic viscosity.
@@ -75,8 +75,14 @@ class HuntII:
         self.num_k_points = num_k_points
         # replace these later with a "grid" argument
         # or instead reorganise this to be single x, y points
-        self.x = x
-        self.y = y
+        if type(x) is not list:
+            self.x = [x]
+        else:
+            self.x = x
+        if type(y) is not list:
+            self.y = [y]
+        else:
+            self.y = y
         self.dyn_visc = dyn_visc
         self.conductivity = conductivity
         self.permeability = permeability
