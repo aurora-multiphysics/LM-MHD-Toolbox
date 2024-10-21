@@ -1,6 +1,5 @@
 import numpy as np
-
-# from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit
 import mhdtools
 
 
@@ -83,3 +82,49 @@ def fraction_rmse_comparison(data, reference_data):
     frmse = rmse_value / reference_abs_mean
 
     return frmse
+
+
+def parametric_fit(func, x, y, initial_params=None, xmin=None, xmax=None):
+    """Fit a function f(x) with some unknown parameters to (x, y) data given a set of
+    initial parameters. A simple wrapper of scipy.optimise.curve_fit
+
+    Parameters
+    ----------
+    func : class 'function'
+        A function f(x), with x as the first argument and all successive arguments as
+        function parameters to be optimised.
+    x : array_like
+        Values of the independent variable.
+    y : array_like
+        Values of the dependent variable corresponding to each point in x.
+    initial_params : array_like, optional
+        Initial guess for the parameters (length N), by default None.
+    xmin : float, optional
+        If defined, fit only to values for x>=xmin, by default None.
+    xmax : float, optional
+        If defined, fit only to values for x<=xmax, by default None.
+
+    Returns
+    -------
+    popt : array
+        Optimal values for the parameters.
+    fit_uncertainty : array
+        One standard deviation error on each of the parameters.
+    """
+
+    if xmin:
+        xmask_lower = xmin <= x
+        x = x[xmask_lower]
+        y = y[xmask_lower]
+    if xmax:
+        xmask_upper = x <= xmax
+        x = x[xmask_upper]
+        y = y[xmask_upper]
+
+    popt, pcov = curve_fit(func, x, y, p0=initial_params)
+    fit_uncertainty = np.sqrt(np.diag(pcov))
+    return popt, fit_uncertainty
+
+
+def linear_function(x, m, c):
+    return m * x + c

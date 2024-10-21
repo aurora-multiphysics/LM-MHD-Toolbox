@@ -12,7 +12,8 @@ description = ""
 readme = "README.md"
 dependencies = [
     "numpy",
-    "matplotlib"
+    "matplotlib",
+    "scipy"
 ]
 
 [tool.hatch.build.targets.wheel]

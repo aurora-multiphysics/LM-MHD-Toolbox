@@ -1,3 +1,3 @@
 import mhdtools.analytic
-import mhdtools.paraview_interface
+import mhdtools.file_io
 import mhdtools.statistics
