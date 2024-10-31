@@ -51,5 +51,11 @@ shercliff_case_uz = shercliff_case.scaled_velocity_z
 shercliff_case_bz = shercliff_case.scaled_B_field_z
 shercliff_case_K = shercliff_case.scaled_pressure_drop
 
-plt.imshow(shercliff_case_uz)
+fig = plt.figure(figsize=(10, 8))
+ax1 = plt.pcolormesh(x, y, shercliff_case_uz, cmap="coolwarm", shading="gouraud")
+plt.xlabel("x")
+plt.ylabel("y")
+cb = plt.colorbar()
+fig.tight_layout()
+plt.savefig("ex_1a_laminar_ducts_Shercliff.png")
 print("Pressure Drop K = %f Pa/m" % shercliff_case_K)
