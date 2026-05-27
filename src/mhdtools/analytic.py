@@ -434,8 +434,8 @@ class Sloan:
         x,
         y,
         dyn_visc,
-        conductivity_w,
         conductivity_f,
+        conductivity_w,
         permeability,
     ):
         """Constructs the necessary attributes for the HuntII object.
@@ -458,10 +458,10 @@ class Sloan:
             y-axis points (-a<=y<=a, order ascending).
         dyn_visc : float
             Dynamic viscosity.
-        conductivity_w : float
-            Hartmann wall conductivity
         conductivity_f : float
             Fluid conductivity.
+        conductivity_w : float
+            Hartmann wall conductivity
         permeability : float
             Fluid permeability.
 
@@ -471,6 +471,7 @@ class Sloan:
         None.
 
         """
+
         # Above: should change y to run from -(a+t_w) to (a+t_w),
         # and implement B_2 solution
 
@@ -496,8 +497,8 @@ class Sloan:
             self.y = y
             self.single_point = False
         self.dyn_visc = dyn_visc
-        self.conductivity_w = (conductivity_w,)
-        self.conductivity_f = (conductivity_f,)
+        self.conductivity_w = conductivity_w
+        self.conductivity_f = conductivity_f
         self.permeability = permeability
 
         self.r = self.b / self.a
@@ -573,9 +574,6 @@ class Sloan:
 
         #         Q += Q_k
 
-        w = np.transpose(w)
-        B = np.transpose(B)
-
         if self.single_point:
             w = float(w)
             B = float(B)
@@ -621,7 +619,7 @@ class Sloan:
         ) * np.cosh(alpha_n)
         return E_n
 
-    def _Etan_denom(D_n, E_n, alpha_n, beta_n):
+    def _Etan_denom(self, D_n, E_n, alpha_n, beta_n):
         denom = D_n * np.cosh(alpha_n) - E_n * np.cosh(beta_n)
         return denom
 
