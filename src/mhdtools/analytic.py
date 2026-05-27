@@ -4,21 +4,22 @@ import numpy as np
 class HuntII:
     """Class for computing the Hunt-II analytic solution.
 
-    This class computes analytic solutions to the Hunt-II case, originally derived in
-    Hunt J C R 1965 J. Fluid Mech. 21 577-90, using the formulation detailed in
-    Appendix A of Ni M J, Munipalli R, Huang P, Morley N B and Abdou M A 2007
+    This class computes analytic solutions to the Hunt-II case, originally
+    derived in Hunt J C R 1965 J. Fluid Mech. 21 577-90, using the formulation
+    detailed in Appendix A of
+    Ni M J, Munipalli R, Huang P, Morley N B and Abdou M A 2007
     J. Comput. Phys. 227 205-28.
 
     In addition to being applicable to the Hunt-II case, in the limit of dB=0
-    this solution generalises to the Shercliff solution for perfectly insulating
-    Hartmann and side walls, originally derived in Shercliff J A 1953
-    Math. Proc. Camb. Phil. Soc. 49 136-44
+    this solution generalises to the Shercliff solution for perfectly
+    insulating Hartmann and side walls, originally derived in
+    Shercliff J A 1953 Math. Proc. Camb. Phil. Soc. 49 136-44
 
-    The magnetic field is applied in the y direction, with Hartmann walls of length 2b
-    and side walls of length 2a such that -b<x<b, -a<y<a. Flow is in the positive z
-    direction, and the analytic solution gives the velocity and induced magnetic field
-    z-components, with x and y components of both equal to zero, as well as the
-    pressure drop in the z direction.
+    The magnetic field is applied in the y direction, with Hartmann walls of
+    length 2b and side walls of length 2a such that -b<x<b, -a<y<a. Flow is in
+    the positive z direction, and the analytic solution gives the velocity and
+    induced magnetic field z-components, with x and y components of both equal
+    to zero, as well as the pressure drop in the z direction.
     """
 
     def __init__(
@@ -73,13 +74,16 @@ class HuntII:
         self.b = b
         self.dB = dB
         self.num_k_points = num_k_points
-        if isinstance(x, (float, np.floating)) and isinstance(x, (float, np.floating)):
+        if isinstance(x, (float, np.floating)) and isinstance(
+            x, (float, np.floating)
+        ):
             self.x = [x]
             self.y = [y]
             self.single_point = True
         elif type(x) is not np.ndarray or type(y) is not np.ndarray:
             raise Exception(
-                "Either both x and y must be numpy arrays, or both must be floats"
+                "Either both x and y must be numpy arrays, "
+                "or both must be floats"
             )
         else:
             self.x = x
@@ -222,7 +226,9 @@ class HuntII:
             term2_k_constant = r2_k / (N_k * (1 + np.exp(-2 * r1_k)))
             return term2_k_constant
         else:
-            num = (dB * r2_k + ((1 - np.exp(-2 * r2_k)) / (1 + np.exp(-2 * r2_k)))) / 2
+            num = (
+                dB * r2_k + ((1 - np.exp(-2 * r2_k)) / (1 + np.exp(-2 * r2_k)))
+            ) / 2
             den = (((1 + np.exp(-2 * r1_k)) / 2) * dB * N_k) + (
                 (1 + np.exp(-2 * (r1_k + r2_k))) / (1 + np.exp(-2 * r2_k))
             )
@@ -230,12 +236,16 @@ class HuntII:
             return term2_k_constant
 
     def _v2k(self, r1_k, eta_val, term2_k_constant):
-        v2_k_variable = np.exp(-r1_k * (1 - eta_val)) + np.exp(-r1_k * (1 + eta_val))
+        v2_k_variable = np.exp(-r1_k * (1 - eta_val)) + np.exp(
+            -r1_k * (1 + eta_val)
+        )
         v2_k = term2_k_constant * v2_k_variable
         return v2_k
 
     def _h2k(self, r1_k, eta_val, term2_k_constant):
-        h2_k_variable = np.exp(-r1_k * (1 - eta_val)) - np.exp(-r1_k * (1 + eta_val))
+        h2_k_variable = np.exp(-r1_k * (1 - eta_val)) - np.exp(
+            -r1_k * (1 + eta_val)
+        )
         h2_k = term2_k_constant * h2_k_variable
         return h2_k
 
@@ -245,7 +255,9 @@ class HuntII:
             term3_k_constant = r1_k / (N_k * (1 + np.exp(-2 * r2_k)))
             return term3_k_constant
         else:
-            num = (dB * r1_k + ((1 - np.exp(-2 * r1_k)) / (1 + np.exp(-2 * r1_k)))) / 2
+            num = (
+                dB * r1_k + ((1 - np.exp(-2 * r1_k)) / (1 + np.exp(-2 * r1_k)))
+            ) / 2
             den = (((1 + np.exp(-2 * r2_k)) / 2) * dB * N_k) + (
                 (1 + np.exp(-2 * (r1_k + r2_k))) / (1 + np.exp(-2 * r1_k))
             )
@@ -253,12 +265,16 @@ class HuntII:
             return term3_k_constant
 
     def _v3k(self, r2_k, eta_val, term3_k_constant):
-        v3_k_variable = np.exp(-r2_k * (1 - eta_val)) + np.exp(-r2_k * (1 + eta_val))
+        v3_k_variable = np.exp(-r2_k * (1 - eta_val)) + np.exp(
+            -r2_k * (1 + eta_val)
+        )
         v3_k = term3_k_constant * v3_k_variable
         return v3_k
 
     def _h3k(self, r2_k, eta_val, term3_k_constant):
-        h3_k_variable = np.exp(-r2_k * (1 - eta_val)) - np.exp(-r2_k * (1 + eta_val))
+        h3_k_variable = np.exp(-r2_k * (1 - eta_val)) - np.exp(
+            -r2_k * (1 + eta_val)
+        )
         h3_k = term3_k_constant * h3_k_variable
         return h3_k
 
@@ -279,7 +295,8 @@ class HuntII:
         return Q_Eta_component_k
 
     def set_scaled_pressure_drop(self, scaled_pressure_drop):
-        """Set a dimensional pressure drop to constrain scaling of analytic solution.
+        """Set a dimensional pressure drop
+        to constrain scaling of analytic solution.
 
         Parameters
         ----------
@@ -295,7 +312,8 @@ class HuntII:
         """
         if not self._solved:
             raise Exception(
-                "Must run analytic_solve before scaled results can be obtained."
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
             )
         if self._scaling_constraint:
             raise Exception(
@@ -305,11 +323,14 @@ class HuntII:
         self._scaling_constraint = "Set Pressure Drop"
         self.scaled_pressure_drop = scaled_pressure_drop
         self.scaled_average_velocity = (
-            self.average_velocity * scaled_pressure_drop * (self.a**2 / self.dyn_visc)
+            self.average_velocity
+            * scaled_pressure_drop
+            * (self.a**2 / self.dyn_visc)
         )
 
     def set_scaled_average_velocity(self, scaled_average_velocity):
-        """Set a dimensional average velocity to constrain scaling of analytic solution.
+        """Set a dimensional average velocity
+        to constrain scaling of analytic solution.
 
         Parameters
         ----------
@@ -325,7 +346,8 @@ class HuntII:
         """
         if not self._solved:
             raise Exception(
-                "Must run analytic_solve before scaled results can be obtained."
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
             )
 
         if self._scaling_constraint:
@@ -351,7 +373,8 @@ class HuntII:
         """
         if not self._solved:
             raise Exception(
-                "Must run analytic_solve before scaled results can be obtained."
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
             )
         if not self._scaling_constraint:
             raise Exception(
@@ -394,11 +417,11 @@ class Sloan:
     Shercliff J A 1953 Math. Proc. Camb. Phil. Soc. 49 136-44,
     is recovered.
 
-    The magnetic field is applied in the y direction, with Hartmann walls of length 2b
-    and side walls of length 2a such that -b<x<b, -a<y<a. Flow is in the positive z
-    direction, and the analytic solution gives the velocity and induced magnetic field
-    z-components, with x and y components of both equal to zero, as well as the
-    pressure drop in the z direction.
+    The magnetic field is applied in the y direction, with Hartmann walls of
+    length 2b and side walls of length 2a such that -b<x<b, -a<y<a. Flow is in
+    the positive z direction, and the analytic solution gives the velocity and
+    induced magnetic field z-components, with x and y components of both equal
+    to zero, as well as the pressure drop in the z direction.
     """
 
     def __init__(
