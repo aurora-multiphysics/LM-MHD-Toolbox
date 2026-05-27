@@ -628,7 +628,6 @@ class Sloan:
     def _wEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
         if 1 < eta_val <= self.q:
             return 0
-            # w=0 B2 h
         elif -1 <= eta_val <= 1:
             numer = D_n * np.cosh(alpha_n * eta_val) - E_n * np.cosh(
                 beta_n * eta_val
@@ -636,24 +635,23 @@ class Sloan:
             wEtaComponent = 1 - (numer / Eta_n_denom)
             return wEtaComponent
         elif -self.q <= eta_val < -1:
-            # w=0 B2 s
             return 0
         else:
             raise ValueError(f"eta={eta_val} is outside defined domain")
 
     def _BEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
         if 1 < eta_val <= self.q:
-            return 0
             # w=0 B2 h
+            raise Exception("B in solid is not yet defined")
         elif -1 <= eta_val <= 1:
-            numer = D_n * np.cosh(alpha_n * eta_val) - E_n * np.cosh(
-                beta_n * eta_val
+            numer = E_n * np.sin(beta_n * eta_val) - D_n * np.sinh(
+                alpha_n * eta_val
             )
-            wEtaComponent = 1 - (numer / Eta_n_denom)
-            return wEtaComponent
+            BEtaComponent = numer / Eta_n_denom
+            return BEtaComponent
         elif -self.q <= eta_val < -1:
-            # w=0 B2 s
-            return 0
+            # B2 s
+            raise Exception("B in solid is not yet defined")
         else:
             raise ValueError(f"eta={eta_val} is outside defined domain")
 
