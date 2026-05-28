@@ -515,7 +515,7 @@ class Sloan:
         n_list = list(range(0, self.truncation))
         w = np.zeros(self.xyShape)
         B = np.zeros(self.xyShape)
-        Q = 0
+        # Q = 0
 
         for n in n_list:
             # # calculate term in V equation
@@ -588,9 +588,9 @@ class Sloan:
 
         self.w = w
         self.B = B
-        self.Q = Q
+        # self.Q = Q
         # self.average_velocity = self.Q / (4 * self.l_ratio)
-        # self._solved = True
+        self._solved = True
 
     def _an(self, n):
         a_n = (n + 0.5) * np.pi / self.r
@@ -712,38 +712,43 @@ class Sloan:
     #     Q_Eta_component_k = 2 - Q_v2 - Q_v3
     #     return Q_Eta_component_k
 
-    # def set_scaled_pressure_drop(self, scaled_pressure_drop):
-    #     """Set a dimensional pressure drop to constrain scaling of analytic solution.
+    def set_scaled_pressure_grad(self, scaled_pressure_grad):
+        """Set a dimensional pressure gradient to
+        constrain scaling of analytic solution.
 
-    #     Parameters
-    #     ----------
-    #     scaled_pressure_drop : float
-    #         Dimensional pressure drop (-dp/dz), e.g. in simulation units.
+        Parameters
+        ----------
+        scaled_pressure_grad : float
+            Dimensional pressure grad (-dp/dz), e.g. in simulation units.
 
-    #     Raises
-    #     ------
-    #     Exception
-    #         If analytic_solve has not been run
-    #     Exception
-    #         If scaled_average_velocity has been set
-    #     """
-    #     if not self._solved:
-    #         raise Exception(
-    #             "Must run analytic_solve before scaled results can be obtained."
-    #         )
-    #     if self._scaling_constraint:
-    #         raise Exception(
-    #             "Cannot set scaled_pressure_drop if "
-    #             "scaled_average_velocity is already set"
-    #         )
-    #     self._scaling_constraint = "Set Pressure Drop"
-    #     self.scaled_pressure_drop = scaled_pressure_drop
-    #     self.scaled_average_velocity = (
-    #         self.average_velocity * scaled_pressure_drop * (self.a**2 / self.dyn_visc)
-    #     )
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaled_average_velocity has been set
+        """
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
+            )
+        if self._scaling_constraint:
+            raise Exception(
+                "Cannot set scaled_pressure_grad if "
+                "scaled_average_velocity is already set"
+            )
+        self._scaling_constraint = "Set Pressure Gradient"
+        self.scaled_pressure_grad = scaled_pressure_grad
+        # self.scaled_average_velocity = (
+        #     self.average_velocity
+        #     * scaled_pressure_grad
+        #     * (self.a**2 / self.dyn_visc)
+        # )
 
     # def set_scaled_average_velocity(self, scaled_average_velocity):
-    #     """Set a dimensional average velocity to constrain scaling of analytic solution.
+    #     """Set a dimensional average velocity
+    #     to constrain scaling of analytic solution.
 
     #     Parameters
     #     ----------
@@ -755,63 +760,68 @@ class Sloan:
     #     Exception
     #         If analytic_solve has not been run
     #     Exception
-    #         If scaled_pressure_drop has been set
+    #         If scaled_pressure_grad has been set
     #     """
     #     if not self._solved:
     #         raise Exception(
-    #             "Must run analytic_solve before scaled results can be obtained."
+    #             "Must run analytic_solve before"
+    #             "scaled results can be obtained."
     #         )
 
     #     if self._scaling_constraint:
     #         raise Exception(
     #             "Cannot set scaled_average_velocity if "
-    #             "scaled_pressure_drop is already set"
+    #             "scaled_pressure_grad is already set"
     #         )
     #     self._scaling_constraint = "Set Average Velocity"
     #     self.scaled_average_velocity = scaled_average_velocity
-    #     self.scaled_pressure_drop = (
+    #     self.scaled_pressure_grad = (
     #         self.scaled_average_velocity / self.average_velocity
     #     ) * (self.dyn_visc / self.a**2)
 
-    # def calculate_scaled_solution(self):
-    #     """Calculate scaled solution a previously set scaling constraint.
+    def calculate_scaled_solution(self):
+        """Calculate scaled solution a previously set scaling constraint.
 
-    #     Raises
-    #     ------
-    #     Exception
-    #         If analytic_solve has not been run
-    #     Exception
-    #         If scaling constraint not set
-    #     """
-    #     if not self._solved:
-    #         raise Exception(
-    #             "Must run analytic_solve before scaled results can be obtained."
-    #         )
-    #     if not self._scaling_constraint:
-    #         raise Exception(
-    #             "Cannot calculate scaled fields until either "
-    #             "set_scaled_average_velocity "
-    #             "or set_scaled_pressure_drop has been called."
-    #         )
-    #     self._calculate_scaled_velocity()
-    #     self._calculate_scaled_H_field()
-    #     self._calculate_scaled_B_field()
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaling constraint not set
+        """
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
+            )
+        if not self._scaling_constraint:
+            raise Exception(
+                "Cannot calculate scaled fields until either "
+                "set_scaled_average_velocity "
+                "or set_scaled_pressure_grad has been called."
+            )
+        self._calculate_scaled_velocity()
+        self._calculate_scaled_B_field()
+        self._calculate_scaled_H_field()
 
-    # def _calculate_scaled_velocity(self):
-    #     self.scaled_velocity_z = (
-    #         self.v * self.scaled_pressure_drop * (self.a**2) / self.dyn_visc
-    #     )
+    def _calculate_scaled_velocity(self):
+        self.scaled_velocity_z = (
+            self.w * self.scaled_pressure_grad * (self.a**2) / self.dyn_visc
+        )
 
-    # def _calculate_scaled_H_field(self):
-    #     self.scaled_H_field_z = (
-    #         self.h
-    #         * self.scaled_pressure_drop
-    #         * self.a**2
-    #         * np.sqrt(self.conductivity / self.dyn_visc)
-    #     )
+        # unsure about this
 
-    # def _calculate_scaled_B_field(self):
-    #     self.scaled_B_field_z = self.scaled_H_field_z * self.permeability
+    def _calculate_scaled_B_field(self):
+        self.scaled_H_field_z = (
+            self.B
+            * self.scaled_pressure_grad
+            * self.a**2
+            * np.sqrt(self.conductivity_f / self.dyn_visc)
+        )
+
+    # unsure about this
+    def _calculate_scaled_H_field(self):
+        self.scaled_B_field_z = self.scaled_H_field_z / self.permeability
 
 
 def makeXYVectors(N_x, N_y, a, b):
