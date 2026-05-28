@@ -9,8 +9,9 @@ a = 1  # height
 b = 1  # width
 N_x = 501  # num points in width
 N_y = 501  # num points in height
+t_w = 0.1  # Hartmann wall thickness
 
-x, y = mhdtools.analytic.makeXYVectors(N_x, N_y, a, b)
+x, y = mhdtools.analytic.makeXYVectors(N_x, N_y, a + t_w, b)
 
 # Define Hunt flow (finite conductivity walls) case
 # Based on HuntII case (side walls are always perfectly insulating)
@@ -18,8 +19,7 @@ x, y = mhdtools.analytic.makeXYVectors(N_x, N_y, a, b)
 # Assumed to be flow along z in a square duct
 
 Ha = 100  # Hartmann number
-t_w = 0.1  # Hartmann wall thickness
-truncation = 200  # Number of Fourier iterations
+truncation = 70  # Number of Fourier iterations
 dyn_visc = 1  # Dynamic viscosity
 conductivity_f = 1  # Fluid conductivity
 conductivity_w = 1  # Solid conductivity

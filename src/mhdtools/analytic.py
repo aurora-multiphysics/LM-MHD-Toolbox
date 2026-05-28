@@ -479,7 +479,7 @@ class Sloan:
         self.a = a
         self.b = b
         # self.t_w = t_w # don't think this is needed
-        self.q = 1 + t_w / a  # a+tw=aq, so q=(a+tw)/a = 1+tw/a
+        self.q = 1 + t_w / a  # a+t_w=a*q, so q=(a+t_w)/a = 1+t_w/a
         self.truncation = truncation
         if isinstance(x, (float, np.floating)) and isinstance(
             x, (float, np.floating)
@@ -544,6 +544,7 @@ class Sloan:
             D_n = self._Dn(a_n, beta_n)
             E_n = self._En(a_n, alpha_n)
             Eta_n_denom = self._Etan_denom(D_n, E_n, alpha_n, beta_n)
+            Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
             for i in range(len(self.yEta)):
                 eta_val = self.yEta[i]
@@ -551,7 +552,14 @@ class Sloan:
                     eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom
                 )
                 BEta_n[i] = self._BEtaComponent(
-                    eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom
+                    eta_val,
+                    D_n,
+                    E_n,
+                    alpha_n,
+                    beta_n,
+                    Eta_n_denom,
+                    a_n,
+                    Eta_n_solid,
                 )
 
             # compute iteration
@@ -604,54 +612,101 @@ class Sloan:
         return np.cos(a_n * xi_val)
 
     def _Dn(self, a_n, beta_n):
-        sigma_1 = self.conductivity_f
-        sigma_2 = self.conductivity_w
-        D_n = sigma_1 * a_n * np.sinh(beta_n) - sigma_2 * beta_n * np.tanh(
-            a_n * (1 - self.q)
-        ) * np.cosh(beta_n)
+        if self.conductivity_w is np.inf:
+            D_n = None
+        else:
+            sigma_1 = self.conductivity_f
+            sigma_2 = self.conductivity_w
+            D_n = sigma_1 * a_n * np.sinh(beta_n) - sigma_2 * beta_n * np.tanh(
+                a_n * (1 - self.q)
+            ) * np.cosh(beta_n)
         return D_n
 
     def _En(self, a_n, alpha_n):
-        sigma_1 = self.conductivity_f
-        sigma_2 = self.conductivity_w
-        E_n = sigma_1 * a_n * np.sinh(alpha_n) - sigma_2 * alpha_n * np.tanh(
-            a_n * (1 - self.q)
-        ) * np.cosh(alpha_n)
+        if self.conductivity_w is np.inf:
+            E_n = None
+        else:
+            sigma_1 = self.conductivity_f
+            sigma_2 = self.conductivity_w
+            E_n = sigma_1 * a_n * np.sinh(
+                alpha_n
+            ) - sigma_2 * alpha_n * np.tanh(a_n * (1 - self.q)) * np.cosh(
+                alpha_n
+            )
         return E_n
 
     def _Etan_denom(self, D_n, E_n, alpha_n, beta_n):
-        denom = D_n * np.cosh(alpha_n) - E_n * np.cosh(beta_n)
+        if self.conductivity_w is np.inf:
+            denom = (beta_n - alpha_n) * np.cosh(alpha_n) * np.cosh(beta_n)
+        else:
+            denom = D_n * np.cosh(alpha_n) - E_n * np.cosh(beta_n)
         return denom
 
+    def _Etan_solid(self, D_n, E_n, alpha_n, beta_n, a_n):
+        if self.conductivity_w is np.inf:
+            numer = alpha_n * np.sinh(beta_n) * np.cosh(
+                alpha_n
+            ) - beta_n * np.sinh(alpha_n) * np.cosh(beta_n)
+        else:
+            numer = E_n * np.sinh(beta_n) - D_n * np.sinh(alpha_n)
+        solid_factor = numer / np.sinh(a_n * (1 - self.q))
+        return solid_factor
+
     def _wEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
-        if 1 < eta_val <= self.q:
-            return 0
-        elif -1 <= eta_val <= 1:
-            numer = D_n * np.cosh(alpha_n * eta_val) - E_n * np.cosh(
-                beta_n * eta_val
-            )
+        if -1 <= eta_val <= 1:
+            # fluid
+            if self.conductivity_w is np.inf:
+                numer = beta_n * np.cosh(beta_n) * np.cosh(
+                    alpha_n * eta_val
+                ) - alpha_n * np.cosh(alpha_n) * np.cosh(beta_n * eta_val)
+            else:
+                numer = D_n * np.cosh(alpha_n * eta_val) - E_n * np.cosh(
+                    beta_n * eta_val
+                )
             wEtaComponent = 1 - (numer / Eta_n_denom)
             return wEtaComponent
-        elif -self.q <= eta_val < -1:
+        elif (1 < eta_val <= self.q) or (-self.q <= eta_val < -1):
+            # solid
             return 0
         else:
             raise ValueError(f"eta={eta_val} is outside defined domain")
 
-    def _BEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
-        if 1 < eta_val <= self.q:
-            # w=0 B2 h
-            raise Exception("B in solid is not yet defined")
-        elif -1 <= eta_val <= 1:
-            numer = E_n * np.sin(beta_n * eta_val) - D_n * np.sinh(
-                alpha_n * eta_val
-            )
-            BEtaComponent = numer / Eta_n_denom
-            return BEtaComponent
-        elif -self.q <= eta_val < -1:
-            # B2 s
-            raise Exception("B in solid is not yet defined")
+    def _BEtaComponent(
+        self,
+        eta_val,
+        D_n,
+        E_n,
+        alpha_n,
+        beta_n,
+        Eta_n_denom,
+        a_n,
+        Eta_n_solid,
+    ):
+        fluid = -1 <= eta_val <= 1
+        solid_top_wall = 1 < eta_val <= self.q
+        solid_bot_wall = -self.q <= eta_val < -1
+        if fluid:
+            # fluid
+            if self.conductivity_w is np.inf:
+                numer = alpha_n * np.cosh(alpha_n) * np.sinh(
+                    beta_n * eta_val
+                ) - beta_n * np.cosh(beta_n) * np.sinh(alpha_n * eta_val)
+            else:
+                numer = E_n * np.sinh(beta_n * eta_val) - D_n * np.sinh(
+                    alpha_n * eta_val
+                )
+        elif solid_top_wall or solid_bot_wall:
+            # solid
+            if solid_top_wall:
+                pm = -1  # h_n
+            else:
+                pm = 1  # s_n
+            numer = Eta_n_solid * np.sinh(a_n * (eta_val + (pm * self.q)))
         else:
             raise ValueError(f"eta={eta_val} is outside defined domain")
+
+        BEtaComponent = numer / Eta_n_denom
+        return BEtaComponent
 
     # def _QEtak(self, Q_v2, Q_v3):
     #     Q_Eta_component_k = 2 - Q_v2 - Q_v3
