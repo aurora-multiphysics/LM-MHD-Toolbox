@@ -1,5 +1,5 @@
 import numpy as np
-
+from numpy import cosh, sinh, tanh
 
 class HuntII:
     """Class for computing the Hunt-II analytic solution.
@@ -478,7 +478,6 @@ class Sloan:
         self.Ha = Ha
         self.a = a
         self.b = b
-        # self.t_w = t_w # don't think this is needed
         self.q = 1 + t_w / a  # a+t_w=a*q, so q=(a+t_w)/a = 1+t_w/a
         self.truncation = truncation
         if isinstance(x, (float, np.floating)) and isinstance(
@@ -515,7 +514,7 @@ class Sloan:
         n_list = list(range(0, self.truncation))
         w = np.zeros(self.xyShape)
         B = np.zeros(self.xyShape)
-        # Q = 0
+        Q = 0
 
         for n in n_list:
             # # calculate term in V equation
@@ -543,6 +542,8 @@ class Sloan:
             # compute yEta constant parts
             D_n = self._Dn(a_n, beta_n)
             E_n = self._En(a_n, alpha_n)
+            # print(f"D_n = {D_n}, cosh(alpha_n) = {np.cosh(alpha_n)}")
+            # print(f"E_n = {E_n}, cosh(beta_n) = {np.cosh(beta_n)}")
             Eta_n_denom = self._Etan_denom(D_n, E_n, alpha_n, beta_n)
             Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
@@ -570,17 +571,15 @@ class Sloan:
             w += w_n
             B += B_n
 
-        #         # calculate Q_k
-        #         vXi_integral = self._vXiIntegral(alpha_k)
-        #         v2_k_integral = self._v2kIntegral(r1_k)
-        #         v3_k_integral = self._v3kIntegral(r2_k)
-        #         Q_Xi_component = vXi_constant * vXi_integral
-        #         Q_v2 = term2_k_constant * v2_k_integral
-        #         Q_v3 = term3_k_constant * v3_k_integral
-        #         Q_Eta_component = self._QEtak(Q_v2, Q_v3)
-        #         Q_k = Q_Xi_component * Q_Eta_component
+            # calculate Q_k
 
-        #         Q += Q_k
+            Q_Eta_component = self._wEtaIntegral(
+                D_n, E_n, alpha_n, beta_n, Eta_n_denom
+            )
+            Q_Xi_component = self._wXiIntegral(a_n)
+            Q_k = (4 * k_n / a_n) * Q_Eta_component * Q_Xi_component
+
+            Q += Q_k
 
         if self.single_point:
             w = float(w)
@@ -588,8 +587,8 @@ class Sloan:
 
         self.w = w
         self.B = B
-        # self.Q = Q
-        # self.average_velocity = self.Q / (4 * self.l_ratio)
+        self.Q = Q
+        self.average_velocity = self.Q / (4 * self.r)
         self._solved = True
 
     def _an(self, n):
@@ -617,9 +616,9 @@ class Sloan:
         else:
             sigma_1 = self.conductivity_f
             sigma_2 = self.conductivity_w
-            D_n = sigma_1 * a_n * np.sinh(beta_n) - sigma_2 * beta_n * np.tanh(
+            D_n = sigma_1 * a_n * sinh(beta_n) - sigma_2 * beta_n * tanh(
                 a_n * (1 - self.q)
-            ) * np.cosh(beta_n)
+            ) * cosh(beta_n)
         return D_n
 
     def _En(self, a_n, alpha_n):
@@ -628,39 +627,37 @@ class Sloan:
         else:
             sigma_1 = self.conductivity_f
             sigma_2 = self.conductivity_w
-            E_n = sigma_1 * a_n * np.sinh(
-                alpha_n
-            ) - sigma_2 * alpha_n * np.tanh(a_n * (1 - self.q)) * np.cosh(
-                alpha_n
-            )
+            E_n = sigma_1 * a_n * sinh(alpha_n) - sigma_2 * alpha_n * tanh(
+                a_n * (1 - self.q)
+            ) * cosh(alpha_n)
         return E_n
 
     def _Etan_denom(self, D_n, E_n, alpha_n, beta_n):
         if self.conductivity_w is np.inf:
-            denom = (beta_n - alpha_n) * np.cosh(alpha_n) * np.cosh(beta_n)
+            denom = (beta_n - alpha_n) * cosh(alpha_n) * cosh(beta_n)
         else:
-            denom = D_n * np.cosh(alpha_n) - E_n * np.cosh(beta_n)
+            denom = D_n * cosh(alpha_n) - E_n * cosh(beta_n)
         return denom
 
     def _Etan_solid(self, D_n, E_n, alpha_n, beta_n, a_n):
         if self.conductivity_w is np.inf:
-            numer = alpha_n * np.sinh(beta_n) * np.cosh(
+            numer = alpha_n * sinh(beta_n) * cosh(alpha_n) - beta_n * sinh(
                 alpha_n
-            ) - beta_n * np.sinh(alpha_n) * np.cosh(beta_n)
+            ) * cosh(beta_n)
         else:
-            numer = E_n * np.sinh(beta_n) - D_n * np.sinh(alpha_n)
-        solid_factor = numer / np.sinh(a_n * (1 - self.q))
+            numer = E_n * sinh(beta_n) - D_n * sinh(alpha_n)
+        solid_factor = numer / sinh(a_n * (1 - self.q))
         return solid_factor
 
     def _wEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
         if -1 <= eta_val <= 1:
             # fluid
             if self.conductivity_w is np.inf:
-                numer = beta_n * np.cosh(beta_n) * np.cosh(
+                numer = beta_n * cosh(beta_n) * cosh(
                     alpha_n * eta_val
-                ) - alpha_n * np.cosh(alpha_n) * np.cosh(beta_n * eta_val)
+                ) - alpha_n * cosh(alpha_n) * cosh(beta_n * eta_val)
             else:
-                numer = D_n * np.cosh(alpha_n * eta_val) - E_n * np.cosh(
+                numer = D_n * cosh(alpha_n * eta_val) - E_n * cosh(
                     beta_n * eta_val
                 )
             wEtaComponent = 1 - (numer / Eta_n_denom)
@@ -688,11 +685,11 @@ class Sloan:
         if fluid:
             # fluid
             if self.conductivity_w is np.inf:
-                numer = alpha_n * np.cosh(alpha_n) * np.sinh(
+                numer = alpha_n * cosh(alpha_n) * sinh(
                     beta_n * eta_val
-                ) - beta_n * np.cosh(beta_n) * np.sinh(alpha_n * eta_val)
+                ) - beta_n * cosh(beta_n) * sinh(alpha_n * eta_val)
             else:
-                numer = E_n * np.sinh(beta_n * eta_val) - D_n * np.sinh(
+                numer = E_n * sinh(beta_n * eta_val) - D_n * sinh(
                     alpha_n * eta_val
                 )
         elif solid_top_wall or solid_bot_wall:
@@ -701,16 +698,25 @@ class Sloan:
                 pm = -1  # h_n
             else:
                 pm = 1  # s_n
-            numer = Eta_n_solid * np.sinh(a_n * (eta_val + (pm * self.q)))
+            numer = Eta_n_solid * sinh(a_n * (eta_val + (pm * self.q)))
         else:
             raise ValueError(f"eta={eta_val} is outside defined domain")
 
         BEtaComponent = numer / Eta_n_denom
         return BEtaComponent
 
-    # def _QEtak(self, Q_v2, Q_v3):
-    #     Q_Eta_component_k = 2 - Q_v2 - Q_v3
-    #     return Q_Eta_component_k
+    def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
+        numer = ((D_n / alpha_n) * sinh(alpha_n)) - (
+            (E_n / beta_n) * sinh(beta_n)
+        )
+        wEtaIntegral = 1 - (numer / Eta_n_denom)
+        print(f"wEtaIntegral = {wEtaIntegral}")
+        return wEtaIntegral
+
+    def _wXiIntegral(self, a_n):
+        wXiIntegral = np.sin(a_n * self.r)
+        print(f"wXiIntegral = {wXiIntegral}")
+        return wXiIntegral
 
     def set_scaled_pressure_grad(self, scaled_pressure_grad):
         """Set a dimensional pressure gradient to
@@ -740,44 +746,45 @@ class Sloan:
             )
         self._scaling_constraint = "Set Pressure Gradient"
         self.scaled_pressure_grad = scaled_pressure_grad
-        # self.scaled_average_velocity = (
-        #     self.average_velocity
-        #     * scaled_pressure_grad
-        #     * (self.a**2 / self.dyn_visc)
-        # )
+        self.scaled_average_velocity = (
+            self.average_velocity
+            * scaled_pressure_grad
+            * (self.a**2 / self.dyn_visc)
+        )
 
-    # def set_scaled_average_velocity(self, scaled_average_velocity):
-    #     """Set a dimensional average velocity
-    #     to constrain scaling of analytic solution.
+    def set_scaled_average_velocity(self, scaled_average_velocity):
+        """Set a dimensional average velocity
+        to constrain scaling of analytic solution.
 
-    #     Parameters
-    #     ----------
-    #     scaled_average_velocity : float
-    #         Dimensional average velocity, e.g. in simulation units.
+        Parameters
+        ----------
+        scaled_average_velocity : float
+            Dimensional average velocity, e.g. in simulation units.
 
-    #     Raises
-    #     ------
-    #     Exception
-    #         If analytic_solve has not been run
-    #     Exception
-    #         If scaled_pressure_grad has been set
-    #     """
-    #     if not self._solved:
-    #         raise Exception(
-    #             "Must run analytic_solve before"
-    #             "scaled results can be obtained."
-    #         )
+        Raises
+        ------
+        Exception
+            If analytic_solve has not been run
+        Exception
+            If scaled_pressure_grad has been set
+        """
 
-    #     if self._scaling_constraint:
-    #         raise Exception(
-    #             "Cannot set scaled_average_velocity if "
-    #             "scaled_pressure_grad is already set"
-    #         )
-    #     self._scaling_constraint = "Set Average Velocity"
-    #     self.scaled_average_velocity = scaled_average_velocity
-    #     self.scaled_pressure_grad = (
-    #         self.scaled_average_velocity / self.average_velocity
-    #     ) * (self.dyn_visc / self.a**2)
+        if not self._solved:
+            raise Exception(
+                "Must run analytic_solve before"
+                "scaled results can be obtained."
+            )
+
+        if self._scaling_constraint:
+            raise Exception(
+                "Cannot set scaled_average_velocity if "
+                "scaled_pressure_grad is already set"
+            )
+        self._scaling_constraint = "Set Average Velocity"
+        self.scaled_average_velocity = scaled_average_velocity
+        self.scaled_pressure_grad = (
+            self.scaled_average_velocity / self.average_velocity
+        ) * (self.dyn_visc / self.a**2)
 
     def calculate_scaled_solution(self):
         """Calculate scaled solution a previously set scaling constraint.
