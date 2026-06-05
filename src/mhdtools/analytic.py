@@ -422,6 +422,11 @@ class Sloan:
     the positive z direction, and the analytic solution gives the velocity and
     induced magnetic field z-components, with x and y components of both equal
     to zero, as well as the pressure drop in the z direction.
+
+    Note that this solver may be unable to obtain solutions in some regimes,
+    particularly observed for Ha>~500. This is due to the solution including
+    many hyperbolic functions which tend to infinity as their arguments
+    increase.
     """
 
     def __init__(
