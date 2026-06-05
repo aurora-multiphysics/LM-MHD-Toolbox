@@ -547,8 +547,6 @@ class Sloan:
             # compute yEta constant parts
             D_n = self._Dn(a_n, beta_n)
             E_n = self._En(a_n, alpha_n)
-            # print(f"D_n = {D_n}, cosh(alpha_n) = {np.cosh(alpha_n)}")
-            # print(f"E_n = {E_n}, cosh(beta_n) = {np.cosh(beta_n)}")
             Eta_n_denom = self._Etan_denom(D_n, E_n, alpha_n, beta_n)
             Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
@@ -715,12 +713,10 @@ class Sloan:
             (E_n / beta_n) * sinh(beta_n)
         )
         wEtaIntegral = 1 - (numer / Eta_n_denom)
-        print(f"wEtaIntegral = {wEtaIntegral}")
         return wEtaIntegral
 
     def _wXiIntegral(self, a_n):
         wXiIntegral = np.sin(a_n * self.r)
-        print(f"wXiIntegral = {wXiIntegral}")
         return wXiIntegral
 
     def set_scaled_pressure_grad(self, scaled_pressure_grad):
