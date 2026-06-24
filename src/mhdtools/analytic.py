@@ -130,9 +130,8 @@ class HuntII:
             vXi_constant = self._vXiConstant(k, alpha_k)
 
             # compute xXi variable part
-            for n in range(len(self.xXi)):
-                xi_val = self.xXi[n]
-                vXi_k[n] = self._vXiComponent(vXi_constant, alpha_k, xi_val)
+            xi_arr = np.asarray(self.xXi)
+            vXi_k = self._vXiComponent(vXi_constant, alpha_k, xi_arr)
             hXi_k = vXi_k
 
             # compute yEta constant parts
@@ -140,16 +139,15 @@ class HuntII:
             term3_k_constant = self._term3kConstant(r1_k, r2_k, N_k)
 
             # compute yEta variable parts
-            for n in range(len(self.yEta)):
-                eta_val = self.yEta[n]
+            eta_arr = np.asarray(self.yEta)
 
-                v2 = self._v2k(r1_k, eta_val, term2_k_constant)
-                v3 = self._v3k(r2_k, eta_val, term3_k_constant)
-                vEta_k[n] = self._vEtak(v2, v3)
+            v2 = self._v2k(r1_k, eta_arr, term2_k_constant)
+            v3 = self._v3k(r2_k, eta_arr, term3_k_constant)
+            vEta_k = self._vEtak(v2, v3)
 
-                h2 = self._h2k(r1_k, eta_val, term2_k_constant)
-                h3 = self._h3k(r2_k, eta_val, term3_k_constant)
-                hEta_k[n] = self._hEtak(h2, h3)
+            h2 = self._h2k(r1_k, eta_arr, term2_k_constant)
+            h3 = self._h3k(r2_k, eta_arr, term3_k_constant)
+            hEta_k = self._hEtak(h2, h3)
 
             # compute outer product of orthogonal components
             v_k = np.outer(vXi_k, vEta_k)
