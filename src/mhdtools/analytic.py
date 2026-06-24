@@ -527,8 +527,8 @@ class Sloan:
             # calculate common terms
             a_n = self._an(n)
             k_n = self._kn(n, a_n)
-            alpha_n = self._alphan(n, a_n)
-            beta_n = self._betan(n, a_n)
+            alpha_n = self._alphan(a_n)
+            beta_n = self._betan(a_n)
 
             wXi_n = np.zeros(self.xyShape[0])
             wEta_n = np.zeros(self.xyShape[1])
@@ -543,12 +543,12 @@ class Sloan:
             # compute yEta constant parts
             D_n = self._Dn(a_n, beta_n)
             E_n = self._En(a_n, alpha_n)
-            Eta_n_denom = self._Etan_denom(D_n, E_n, alpha_n, beta_n)
+            Q_n = self._Qn(D_n, E_n, alpha_n, beta_n)
             Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
             eta_arr = np.asarray(self.yEta)
             wEta_n = self._wEtaComponent(
-                eta_arr, D_n, E_n, alpha_n, beta_n, Eta_n_denom
+                eta_arr, D_n, E_n, alpha_n, beta_n, Q_n
             )
             BEta_n = self._BEtaComponent(
                 eta_arr,
@@ -556,7 +556,7 @@ class Sloan:
                 E_n,
                 alpha_n,
                 beta_n,
-                Eta_n_denom,
+                Q_n,
                 a_n,
                 Eta_n_solid,
             )
@@ -572,7 +572,7 @@ class Sloan:
             # calculate Q_k
 
             Q_Eta_component = self._wEtaIntegral(
-                D_n, E_n, alpha_n, beta_n, Eta_n_denom
+                D_n, E_n, alpha_n, beta_n, Q_n
             )
             Q_Xi_component = self._wXiIntegral(a_n)
             Q_k = (4 * k_n / a_n) * Q_Eta_component * Q_Xi_component
@@ -597,11 +597,11 @@ class Sloan:
         k_n = 2 * ((-1) ** n) / (self.r * a_n**3)
         return k_n
 
-    def _alphan(self, n, a_n):
+    def _alphan(self, a_n):
         alpha_n = 0.5 * (-self.Ha + np.sqrt(self.Ha**2 + 4 * a_n**2))
         return alpha_n
 
-    def _betan(self, n, a_n):
+    def _betan(self, a_n):
         beta_n = 0.5 * (-self.Ha - np.sqrt(self.Ha**2 + 4 * a_n**2))
         return beta_n
 
@@ -630,12 +630,12 @@ class Sloan:
             ) * cosh(alpha_n)
         return E_n
 
-    def _Etan_denom(self, D_n, E_n, alpha_n, beta_n):
+    def _Qn(self, D_n, E_n, alpha_n, beta_n):
         if self.conductivity_w is np.inf:
-            denom = (beta_n - alpha_n) * cosh(alpha_n) * cosh(beta_n)
+            Q_n = (beta_n - alpha_n) * cosh(alpha_n) * cosh(beta_n)
         else:
-            denom = D_n * cosh(alpha_n) - E_n * cosh(beta_n)
-        return denom
+            Q_n = D_n * cosh(alpha_n) - E_n * cosh(beta_n)
+        return Q_n
 
     def _Etan_solid(self, D_n, E_n, alpha_n, beta_n, a_n):
         if self.conductivity_w is np.inf:
@@ -647,7 +647,7 @@ class Sloan:
         solid_factor = numer / sinh(a_n * (1 - self.q))
         return solid_factor
 
-    def _wEtaComponent(self, eta_arr, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
+    def _wEtaComponent(self, eta_arr, D_n, E_n, alpha_n, beta_n, Q_n):
         fluid_mask = (eta_arr >= -1) & (eta_arr <= 1)
         solid_mask = ((eta_arr > 1) & (eta_arr <= self.q)) | (
             (eta_arr >= -self.q) & (eta_arr < -1)
@@ -672,7 +672,7 @@ class Sloan:
                 numer = D_n * cosh(alpha_n * eta_arr[fluid_mask]) - E_n * cosh(
                     beta_n * eta_arr[fluid_mask]
                 )
-            wEtaComponent[fluid_mask] = 1 - (numer / Eta_n_denom)
+            wEtaComponent[fluid_mask] = 1 - (numer / Q_n)
 
         if np.any(solid_mask):
             # solid
@@ -687,7 +687,7 @@ class Sloan:
         E_n,
         alpha_n,
         beta_n,
-        Eta_n_denom,
+        Q_n,
         a_n,
         Eta_n_solid,
     ):
@@ -727,14 +727,14 @@ class Sloan:
                 )
             )
 
-        BEtaComponent = numer / Eta_n_denom
+        BEtaComponent = numer / Q_n
         return BEtaComponent
 
-    def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
+    def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, Q_n):
         numer = ((D_n / alpha_n) * sinh(alpha_n)) - (
             (E_n / beta_n) * sinh(beta_n)
         )
-        wEtaIntegral = 1 - (numer / Eta_n_denom)
+        wEtaIntegral = 1 - (numer / Q_n)
         return wEtaIntegral
 
     def _wXiIntegral(self, a_n):
