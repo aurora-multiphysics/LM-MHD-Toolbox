@@ -2,6 +2,7 @@ import mhdtools
 import mhdtools.analytic
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 # Define functions for Hunt and Sloan solutions
 
@@ -19,7 +20,11 @@ def Hunt_solution(
     conductivity_w,
     permeability,
     average_velocity,
+    timing=False,
 ):
+
+    t0 = time.perf_counter()
+
     # Create the grid
 
     # x, y = mhdtools.analytic.makeXYVectors(N_x, N_y, a + t_w, b)
@@ -53,6 +58,10 @@ def Hunt_solution(
     # Calculate scaled fields
     hunt_case.calculate_scaled_solution()
 
+    t1 = time.perf_counter() - t0
+    if timing:
+        print(f"\nHunt time: {t1:.2e}s")
+
     return x, y, hunt_case
 
 
@@ -70,7 +79,11 @@ def Sloan_solution(
     permeability,
     average_velocity,
     fluid_only=False,
+    timing=False,
 ):
+
+    t0 = time.perf_counter()
+
     # Create the grid
 
     if fluid_only:
@@ -101,6 +114,11 @@ def Sloan_solution(
 
     # Calculate scaled fields
     sloan_case.calculate_scaled_solution()
+
+    t1 = time.perf_counter() - t0
+    if timing:
+        print(f"\nSloan time: {t1:.2e}s")
+    return x, y, sloan_case
 
     return x, y, sloan_case
 
@@ -194,6 +212,7 @@ x, y, sloan_case = Sloan_solution(
     conductivity_w,
     permeability,
     average_velocity,
+    timing=True,
 )
 
 fig = plt.figure(figsize=(10, 8))
@@ -226,6 +245,7 @@ x, y, hunt_case = Hunt_solution(
     conductivity_w,
     permeability,
     average_velocity,
+    timing=True,
 )
 
 fig = plt.figure(figsize=(10, 8))
