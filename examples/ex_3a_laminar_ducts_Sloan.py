@@ -223,7 +223,18 @@ plt.xlabel("x")
 plt.ylabel("y")
 cb = plt.colorbar()
 fig.tight_layout()
-plt.savefig("ex_3a_laminar_ducts_Sloan.png")
+plt.savefig("ex_3a_laminar_ducts_u_Sloan.png")
+
+fig = plt.figure(figsize=(10, 8))
+ax1 = plt.pcolormesh(
+    x, y, sloan_case.scaled_B_field_z, cmap="coolwarm", shading="gouraud"
+)
+plt.xlabel("x")
+plt.ylabel("y")
+cb = plt.colorbar()
+fig.tight_layout()
+plt.savefig("ex_3a_laminar_ducts_b_Sloan.png")
+
 print("\nSloan:")
 print("Pressure Gradient -dp/dz = %f Pa/m" % sloan_case.scaled_pressure_grad)
 print("Flow Rate Q = %f [ND]" % sloan_case.Q)
@@ -256,7 +267,18 @@ plt.xlabel("x")
 plt.ylabel("y")
 cb = plt.colorbar()
 fig.tight_layout()
-plt.savefig("ex_3a_laminar_ducts_HuntII.png")
+plt.savefig("ex_3a_laminar_ducts_u_HuntII.png")
+
+fig = plt.figure(figsize=(10, 8))
+ax1 = plt.pcolormesh(
+    x, y, hunt_case.scaled_B_field_z, cmap="coolwarm", shading="gouraud"
+)
+plt.xlabel("x")
+plt.ylabel("y")
+cb = plt.colorbar()
+fig.tight_layout()
+plt.savefig("ex_3a_laminar_ducts_b_HuntII.png")
+
 print("\nHunt:")
 print("Pressure Gradient -dp/dz = %f Pa/m" % hunt_case.scaled_pressure_drop)
 print("Flow Rate Q = %f [ND]" % hunt_case.Q)
