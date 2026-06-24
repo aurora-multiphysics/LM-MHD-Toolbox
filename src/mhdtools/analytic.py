@@ -538,10 +538,8 @@ class Sloan:
             BXi_n = np.zeros(self.xyShape[0])
             BEta_n = np.zeros(self.xyShape[1])
 
-            # compute xXi variable part
-            for i in range(len(self.xXi)):
-                xi_val = self.xXi[i]
-                wXi_n[i] = self._XiComponent(a_n, xi_val)
+            xi_arr = np.asarray(self.xXi)
+            wXi_n = self._XiComponent(a_n, xi_arr)
             BXi_n = wXi_n
 
             # compute yEta constant parts
@@ -550,21 +548,20 @@ class Sloan:
             Eta_n_denom = self._Etan_denom(D_n, E_n, alpha_n, beta_n)
             Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
-            for i in range(len(self.yEta)):
-                eta_val = self.yEta[i]
-                wEta_n[i] = self._wEtaComponent(
-                    eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom
-                )
-                BEta_n[i] = self._BEtaComponent(
-                    eta_val,
-                    D_n,
-                    E_n,
-                    alpha_n,
-                    beta_n,
-                    Eta_n_denom,
-                    a_n,
-                    Eta_n_solid,
-                )
+            eta_arr = np.asarray(self.yEta)
+            wEta_n = self._wEtaComponent(
+                eta_arr, D_n, E_n, alpha_n, beta_n, Eta_n_denom
+            )
+            BEta_n = self._BEtaComponent(
+                eta_arr,
+                D_n,
+                E_n,
+                alpha_n,
+                beta_n,
+                Eta_n_denom,
+                a_n,
+                Eta_n_solid,
+            )
 
             # compute iteration
             w_n = k_n * np.outer(wEta_n, wXi_n)
@@ -610,8 +607,8 @@ class Sloan:
         beta_n = 0.5 * (-self.Ha - np.sqrt(self.Ha**2 + 4 * a_n**2))
         return beta_n
 
-    def _XiComponent(self, a_n, xi_val):
-        return np.cos(a_n * xi_val)
+    def _XiComponent(self, a_n, xi_arr):
+        return np.cos(a_n * xi_arr)
 
     def _Dn(self, a_n, beta_n):
         if self.conductivity_w is np.inf:
@@ -652,28 +649,42 @@ class Sloan:
         solid_factor = numer / sinh(a_n * (1 - self.q))
         return solid_factor
 
-    def _wEtaComponent(self, eta_val, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
-        if -1 <= eta_val <= 1:
+    def _wEtaComponent(self, eta_arr, D_n, E_n, alpha_n, beta_n, Eta_n_denom):
+        fluid_mask = (eta_arr >= -1) & (eta_arr <= 1)
+        solid_mask = ((eta_arr > 1) & (eta_arr <= self.q)) | (
+            (eta_arr >= -self.q) & (eta_arr < -1)
+        )
+
+        if not np.all(fluid_mask | solid_mask):
+            bad = eta_arr[~(fluid_mask | solid_mask)]
+            raise ValueError(f"eta values outside defined domain: {bad}")
+
+        numer = np.zeros_like(eta_arr, dtype=np.float64)
+        wEtaComponent = np.zeros_like(eta_arr, dtype=np.float64)
+
+        if np.any(fluid_mask):
             # fluid
             if self.conductivity_w is np.inf:
                 numer = beta_n * cosh(beta_n) * cosh(
-                    alpha_n * eta_val
-                ) - alpha_n * cosh(alpha_n) * cosh(beta_n * eta_val)
-            else:
-                numer = D_n * cosh(alpha_n * eta_val) - E_n * cosh(
-                    beta_n * eta_val
+                    alpha_n * eta_arr[fluid_mask]
+                ) - alpha_n * cosh(alpha_n) * cosh(
+                    beta_n * eta_arr[fluid_mask]
                 )
-            wEtaComponent = 1 - (numer / Eta_n_denom)
-            return wEtaComponent
-        elif (1 < eta_val <= self.q) or (-self.q <= eta_val < -1):
+            else:
+                numer = D_n * cosh(alpha_n * eta_arr[fluid_mask]) - E_n * cosh(
+                    beta_n * eta_arr[fluid_mask]
+                )
+            wEtaComponent[fluid_mask] = 1 - (numer / Eta_n_denom)
+
+        if np.any(solid_mask):
             # solid
-            return 0
-        else:
-            raise ValueError(f"eta={eta_val} is outside defined domain")
+            wEtaComponent[solid_mask] = 0
+
+        return wEtaComponent
 
     def _BEtaComponent(
         self,
-        eta_val,
+        eta_arr,
         D_n,
         E_n,
         alpha_n,
@@ -682,28 +693,41 @@ class Sloan:
         a_n,
         Eta_n_solid,
     ):
-        fluid = -1 <= eta_val <= 1
-        solid_top_wall = 1 < eta_val <= self.q
-        solid_bot_wall = -self.q <= eta_val < -1
-        if fluid:
+        fluid_mask = (eta_arr >= -1) & (eta_arr <= 1)
+        solid_top_mask = (eta_arr > 1) & (eta_arr <= self.q)
+        solid_bot_mask = (eta_arr >= -self.q) & (eta_arr < -1)
+
+        if not np.all(fluid_mask | solid_top_mask | solid_bot_mask):
+            bad = eta_arr[~(fluid_mask | solid_top_mask | solid_bot_mask)]
+            raise ValueError(f"eta values outside defined domain: {bad}")
+
+        numer = np.zeros_like(eta_arr, dtype=np.float64)
+        pm = np.zeros_like(eta_arr, dtype=np.float64)
+
+        if np.any(fluid_mask):
             # fluid
             if self.conductivity_w is np.inf:
-                numer = alpha_n * cosh(alpha_n) * sinh(
-                    beta_n * eta_val
-                ) - beta_n * cosh(beta_n) * sinh(alpha_n * eta_val)
+                numer[fluid_mask] = alpha_n * cosh(alpha_n) * sinh(
+                    beta_n * eta_arr[fluid_mask]
+                ) - beta_n * cosh(beta_n) * sinh(alpha_n * eta_arr[fluid_mask])
             else:
-                numer = E_n * sinh(beta_n * eta_val) - D_n * sinh(
-                    alpha_n * eta_val
+                numer[fluid_mask] = E_n * sinh(
+                    beta_n * eta_arr[fluid_mask]
+                ) - D_n * sinh(alpha_n * eta_arr[fluid_mask])
+
+        if np.any(solid_top_mask | solid_bot_mask):
+            if np.any(solid_top_mask):
+                pm[solid_top_mask] = -1  # h_n
+            if np.any(solid_bot_mask):
+                pm[solid_bot_mask] = 1  # s_n
+
+            numer[solid_top_mask | solid_bot_mask] = Eta_n_solid * sinh(
+                a_n
+                * (
+                    eta_arr[solid_top_mask | solid_bot_mask]
+                    + (pm[solid_top_mask | solid_bot_mask] * self.q)
                 )
-        elif solid_top_wall or solid_bot_wall:
-            # solid
-            if solid_top_wall:
-                pm = -1  # h_n
-            else:
-                pm = 1  # s_n
-            numer = Eta_n_solid * sinh(a_n * (eta_val + (pm * self.q)))
-        else:
-            raise ValueError(f"eta={eta_val} is outside defined domain")
+            )
 
         BEtaComponent = numer / Eta_n_denom
         return BEtaComponent
