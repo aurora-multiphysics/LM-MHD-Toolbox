@@ -568,8 +568,8 @@ class Sloan:
             )
 
             # compute iteration
-            w_n = k_n * np.outer(wEta_n, wXi_n)
-            B_n = k_n * np.outer(BEta_n, BXi_n)
+            w_n = k_n * np.outer(wXi_n, wEta_n)
+            B_n = k_n * np.outer(BXi_n, BEta_n)
 
             # add to series
             w += w_n
@@ -584,6 +584,9 @@ class Sloan:
             Q_k = (4 * k_n / a_n) * Q_Eta_component * Q_Xi_component
 
             Q += Q_k
+
+        w = np.transpose(w)
+        B = np.transpose(B)
 
         if self.single_point:
             w = float(w)
