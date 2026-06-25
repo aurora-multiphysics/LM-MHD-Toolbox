@@ -1,6 +1,4 @@
 import numpy as np
-from numpy import cosh, sinh, tanh
-
 
 class Sloan:
     """Class for computing the Sloan and Smith 1966 analytic solution.
@@ -61,7 +59,7 @@ class Sloan:
         x : float or 1D numpy.ndarray
             x-axis points (-b<=x<=b, order ascending).
         y : float or 1D numpy.ndarray
-            y-axis points (-a<=y<=a, order ascending).
+            y-axis points (-a-t_w<=y<=a+t_w, order ascending).
         dyn_visc : float
             Dynamic viscosity.
         conductivity_f : float
@@ -144,27 +142,25 @@ class Sloan:
             BXi_n = wXi_n
 
             # compute yEta constant parts
-            D_n = self._Dn(a_n, beta_n)  # change -> Dn_bar
-            E_n = self._En(a_n, alpha_n)  # change -> Dn_bar
-            Q_n = self._Qn(D_n, E_n, alpha_n, beta_n)  # change -> Qn_bar
-            Eta_n_solid = self._Etan_solid(
-                D_n, E_n, alpha_n, beta_n, a_n
-            )  # change -> Qn_bar
+            D_n = self._Dn(a_n, beta_n)
+            E_n = self._En(a_n, alpha_n)
+            P_n = self._Pn(D_n, E_n, alpha_n, beta_n)
+            Eta_n_solid = self._Etan_solid(D_n, E_n, alpha_n, beta_n, a_n)
 
             eta_arr = np.asarray(self.yEta)
             wEta_n = self._wEtaComponent(
-                eta_arr, D_n, E_n, alpha_n, beta_n, Q_n
-            )  # change
+                eta_arr, D_n, E_n, alpha_n, beta_n, P_n
+            )
             BEta_n = self._BEtaComponent(
                 eta_arr,
                 D_n,
                 E_n,
                 alpha_n,
                 beta_n,
-                Q_n,
+                P_n,
                 a_n,
                 Eta_n_solid,
-            )  # change
+            )
 
             # compute iteration
             w_n = k_n * np.outer(wEta_n, wXi_n)
@@ -177,11 +173,9 @@ class Sloan:
             # calculate Q_k
 
             Q_Eta_component = self._wEtaIntegral(
-                D_n, E_n, alpha_n, beta_n, Q_n
+                D_n, E_n, alpha_n, beta_n, P_n
             )
-            Q_Xi_component = self._wXiIntegral(
-                a_n
-            )
+            Q_Xi_component = self._wXiIntegral(a_n)
             Q_k = (4 * k_n / a_n) * Q_Eta_component * Q_Xi_component
 
             Q += Q_k
@@ -215,68 +209,66 @@ class Sloan:
     def _XiComponent(self, a_n, xi_arr):
         return np.cos(a_n * xi_arr)
 
+    def _tanh_cancels(self, dummy):
+        # If walls are perfectly conducting, tanh terms cancel
+        return 1
+
     def _Dn(self, a_n, beta_n):
         if self.conductivity_w is np.inf:
-            raise Exception("Not yet implemented!")
-            # D_n = None
-        else:
-            # sigma_1 = self.conductivity_f
-            # sigma_2 = self.conductivity_w
-            # D_n = sigma_1 * a_n * sinh(beta_n) - sigma_2 * beta_n * tanh(
-            #     a_n * (1 - self.q)
-            # ) * cosh(beta_n)
-            D_n = self.conductivity_f * a_n * (
-                np.exp(2 * beta_n) - 1
-            ) + self.conductivity_w * beta_n * tanh(a_n * (1 - self.q)) * (
-                np.exp(2 * beta_n) + 1
+            sigma_f = 0  # terms in sigma_f are negligible
+            sigma_w = (
+                1  # terms in sigma_w dominate and then all cancel in ratios
             )
+            tanh = (
+                self._tanh_cancels
+            )  # and the tanh functions also cancel in ratios
+        else:
+            sigma_f = self.conductivity_f
+            sigma_w = self.conductivity_w
+            tanh = np.tanh
+
+        D_n = sigma_f * a_n * (
+            np.exp(2 * beta_n) - 1
+        ) + sigma_w * beta_n * tanh(a_n * (self.q - 1)) * (
+            np.exp(2 * beta_n) + 1
+        )
         return D_n
 
     def _En(self, a_n, alpha_n):
         if self.conductivity_w is np.inf:
-            raise Exception("Not yet implemented!")
-            # E_n = None
-        else:
-            # sigma_1 = self.conductivity_f
-            # sigma_2 = self.conductivity_w
-            # E_n = sigma_1 * a_n * sinh(alpha_n) - sigma_2 * alpha_n * tanh(
-            #     a_n * (1 - self.q)
-            # ) * cosh(alpha_n)
-            E_n = self.conductivity_f * a_n * (
-                1 - np.exp(-2 * alpha_n)
-            ) + self.conductivity_w * alpha_n * tanh(a_n * (1 - self.q)) * (
-                1 + np.exp(-2 * alpha_n)
+            sigma_f = 0  # terms in sigma_f are negligible
+            sigma_w = (
+                1  # terms in sigma_w dominate and then all cancel in ratios
             )
+            tanh = (
+                self._tanh_cancels
+            )  # and the tanh functions also cancel in ratios
+        else:
+            sigma_f = self.conductivity_f
+            sigma_w = self.conductivity_w
+            tanh = np.tanh
+
+        E_n = sigma_f * a_n * (
+            1 - np.exp(-2 * alpha_n)
+        ) + sigma_w * alpha_n * tanh(a_n * (self.q - 1)) * (
+            1 + np.exp(-2 * alpha_n)
+        )
         return E_n
 
-    def _Qn(self, D_n, E_n, alpha_n, beta_n):
-        if self.conductivity_w is np.inf:
-            raise Exception("Not yet implemented!")
-            # denom = (beta_n - alpha_n) * cosh(alpha_n) * cosh(beta_n)
-        else:
-            # denom = D_n * cosh(alpha_n) - E_n * cosh(beta_n)
-            Q_n = 0.5 * (
-                D_n * (1 + np.exp(-2 * alpha_n))
-                - E_n * (1 + np.exp(2 * beta_n))
-            )
-        return Q_n
+    def _Pn(self, D_n, E_n, alpha_n, beta_n):
+        P_n = 0.5 * (
+            D_n * (1 + np.exp(-2 * alpha_n)) - E_n * (1 + np.exp(2 * beta_n))
+        )
+        return P_n
 
     def _Etan_solid(self, D_n, E_n, alpha_n, beta_n, a_n):
-        if self.conductivity_w is np.inf:
-            raise Exception("Not yet implemented!")
-            # numer = alpha_n * sinh(beta_n) * cosh(alpha_n) - beta_n * sinh(
-            #     alpha_n
-            # ) * cosh(beta_n)
-        else:
-            # numer = E_n * sinh(beta_n) - D_n * sinh(alpha_n)
-            numer = 0.5 * (
-                D_n * (np.exp(-2 * alpha_n) - 1)
-                + E_n * (np.exp(2 * beta_n) - 1)
-            )
-        solid_factor = numer / sinh(a_n * (1 - self.q))
+        numer = 0.5 * (
+            D_n * (np.exp(-2 * alpha_n) - 1) + E_n * (np.exp(2 * beta_n) - 1)
+        )
+        solid_factor = numer / np.sinh(a_n * (1 - self.q))
         return solid_factor
 
-    def _wEtaComponent(self, eta_arr, D_n, E_n, alpha_n, beta_n, Q_n):
+    def _wEtaComponent(self, eta_arr, D_n, E_n, alpha_n, beta_n, P_n):
         fluid_mask = (eta_arr >= -1) & (eta_arr <= 1)
         solid_mask = ((eta_arr > 1) & (eta_arr <= self.q)) | (
             (eta_arr >= -self.q) & (eta_arr < -1)
@@ -291,25 +283,14 @@ class Sloan:
 
         if np.any(fluid_mask):
             # fluid
-            if self.conductivity_w is np.inf:
-                raise Exception("Not yet implemented!")
-                # numer = beta_n * cosh(beta_n) * cosh(
-                #     alpha_n * eta_arr[fluid_mask]
-                # ) - alpha_n * cosh(alpha_n) * cosh(
-                #     beta_n * eta_arr[fluid_mask]
-                # )
-            else:
-                # numer = D_n * cosh(alpha_n * eta_arr[fluid_mask]) - E_n * cosh(
-                #     beta_n * eta_arr[fluid_mask]
-                # )
-                numer = (D_n / 2) * (
-                    np.exp(-alpha_n * (1 - eta_arr[fluid_mask]))
-                    + np.exp(-alpha_n * (1 + eta_arr[fluid_mask]))
-                ) - (E_n / 2) * (
-                    np.exp(beta_n * (1 - eta_arr[fluid_mask]))
-                    + np.exp(beta_n * (1 + eta_arr[fluid_mask]))
-                )
-            wEtaComponent[fluid_mask] = 1 - (numer / Q_n)
+            numer = (D_n / 2) * (
+                np.exp(-alpha_n * (1 - eta_arr[fluid_mask]))
+                + np.exp(-alpha_n * (1 + eta_arr[fluid_mask]))
+            ) - (E_n / 2) * (
+                np.exp(beta_n * (1 - eta_arr[fluid_mask]))
+                + np.exp(beta_n * (1 + eta_arr[fluid_mask]))
+            )
+            wEtaComponent[fluid_mask] = 1 - (numer / P_n)
 
         if np.any(solid_mask):
             # solid
@@ -324,7 +305,7 @@ class Sloan:
         E_n,
         alpha_n,
         beta_n,
-        Q_n,
+        P_n,
         a_n,
         Eta_n_solid,
     ):
@@ -341,22 +322,13 @@ class Sloan:
 
         if np.any(fluid_mask):
             # fluid
-            if self.conductivity_w is np.inf:
-                raise Exception("Not yet implemented!")
-                # numer[fluid_mask] = alpha_n * cosh(alpha_n) * sinh(
-                #     beta_n * eta_arr[fluid_mask]
-                # ) - beta_n * cosh(beta_n) * sinh(alpha_n * eta_arr[fluid_mask])
-            else:
-                # numer[fluid_mask] = E_n * sinh(
-                #     beta_n * eta_arr[fluid_mask]
-                # ) - D_n * sinh(alpha_n * eta_arr[fluid_mask])
-                numer[fluid_mask] = (D_n / 2) * (
-                    -np.exp(-alpha_n * (1 - eta_arr[fluid_mask]))
-                    + np.exp(-alpha_n * (1 + eta_arr[fluid_mask]))
-                ) + (E_n / 2) * (
-                    -np.exp(beta_n * (1 - eta_arr[fluid_mask]))
-                    + np.exp(beta_n * (1 + eta_arr[fluid_mask]))
-                )
+            numer[fluid_mask] = (D_n / 2) * (
+                -np.exp(-alpha_n * (1 - eta_arr[fluid_mask]))
+                + np.exp(-alpha_n * (1 + eta_arr[fluid_mask]))
+            ) + (E_n / 2) * (
+                -np.exp(beta_n * (1 - eta_arr[fluid_mask]))
+                + np.exp(beta_n * (1 + eta_arr[fluid_mask]))
+            )
 
         if np.any(solid_top_mask | solid_bot_mask):
             if np.any(solid_top_mask):
@@ -364,7 +336,7 @@ class Sloan:
             if np.any(solid_bot_mask):
                 pm[solid_bot_mask] = 1  # s_n
 
-            numer[solid_top_mask | solid_bot_mask] = Eta_n_solid * sinh(
+            numer[solid_top_mask | solid_bot_mask] = Eta_n_solid * np.sinh(
                 a_n
                 * (
                     eta_arr[solid_top_mask | solid_bot_mask]
@@ -372,18 +344,15 @@ class Sloan:
                 )
             )
 
-        BEtaComponent = numer / Q_n
+        BEtaComponent = numer / P_n
         return BEtaComponent
 
-    def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, Q_n):
-        # numer = ((D_n / alpha_n) * sinh(alpha_n)) - (
-        #     (E_n / beta_n) * sinh(beta_n)
-        # )
+    def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, P_n):
         numer = 0.5 * (
             (D_n / alpha_n) * (1 - np.exp(-2 * alpha_n))
             + (E_n / beta_n) * (np.exp(2 * beta_n) - 1)
         )
-        wEtaIntegral = 1 - (numer / Q_n)
+        wEtaIntegral = 1 - (numer / P_n)
         return wEtaIntegral
 
     def _wXiIntegral(self, a_n):
