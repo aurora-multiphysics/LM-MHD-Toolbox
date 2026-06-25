@@ -120,8 +120,6 @@ def Sloan_solution(
         print(f"\nSloan time: {t1:.2e}s")
     return x, y, sloan_case
 
-    return x, y, sloan_case
-
 
 def compare_solutions(
     Ha,
@@ -136,6 +134,7 @@ def compare_solutions(
     conductivity_w,
     permeability,
     average_velocity,
+    timing=False,
 ):
     # This function can only compare the fluid domain as the HuntII solution
     # doesn't include solid domains
@@ -153,6 +152,7 @@ def compare_solutions(
         conductivity_w,
         permeability,
         average_velocity,
+        timing=timing,
     )
 
     x, y, sloan_case = Sloan_solution(
@@ -169,9 +169,13 @@ def compare_solutions(
         permeability,
         average_velocity,
         fluid_only=True,
+        timing=timing,
     )
 
     diff_uz = sloan_case.scaled_velocity_z - hunt_case.scaled_velocity_z
+
+    rmse = mhdtools.statistics.rmse(diff_uz)
+    print(f"Comparison - RMSE: {rmse}")
 
     return x, y, diff_uz
 
@@ -286,6 +290,10 @@ print("Mean Velocity = %f [ND]" % hunt_case.average_velocity)
 print("Rescaled Mean Velocity = %f m/s" % hunt_case.scaled_average_velocity)
 print("Maximum Velocity = %f m/s" % np.max(hunt_case.scaled_velocity_z))
 
+print(
+    f"Ha = {Ha}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+)
+
 x, y, uz_diff = compare_solutions(
     Ha,
     a,
@@ -308,3 +316,178 @@ plt.ylabel("y")
 cb = plt.colorbar()
 fig.tight_layout()
 plt.savefig("ex_3a_laminar_ducts_diff.png")
+
+Ha = 100
+t_w = 0.1
+conductivity_w = 100
+truncation = 100
+print(
+    f"Ha = {Ha}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+)
+
+compare_solutions(
+    Ha,
+    a,
+    b,
+    t_w,
+    truncation,
+    N_x,
+    N_y,
+    dyn_visc,
+    conductivity_f,
+    conductivity_w,
+    permeability,
+    average_velocity,
+)
+
+
+Ha = 100
+t_w = 1
+conductivity_w = 1
+truncation = 100
+print(
+    f"Ha = {Ha}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+)
+
+compare_solutions(
+    Ha,
+    a,
+    b,
+    t_w,
+    truncation,
+    N_x,
+    N_y,
+    dyn_visc,
+    conductivity_f,
+    conductivity_w,
+    permeability,
+    average_velocity,
+)
+
+
+Ha = 100
+t_w = 0.1
+conductivity_w = 0
+truncation = 100
+print(
+    f"Shercliff: Ha = {Ha}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+)
+
+compare_solutions(
+    Ha,
+    a,
+    b,
+    t_w,
+    truncation,
+    N_x,
+    N_y,
+    dyn_visc,
+    conductivity_f,
+    conductivity_w,
+    permeability,
+    average_velocity,
+)
+
+
+Ha = 100
+t_w = 0.1
+conductivity_w = np.inf
+truncation = 100
+print(
+    f"Hunt (perfect): Ha = {Ha}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+)
+
+compare_solutions(
+    Ha,
+    a,
+    b,
+    t_w,
+    truncation,
+    N_x,
+    N_y,
+    dyn_visc,
+    conductivity_f,
+    conductivity_w,
+    permeability,
+    average_velocity,
+)
+
+print("\nVarying Ha:")
+Ha = [20, 100, 500, 1000, 1e4, 2e4]
+t_w = 0.1
+conductivity_w = 1
+truncation = 100
+
+for Ha_val in Ha:
+    print(
+        f"Ha = {Ha_val}, t_w = {t_w}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+    )
+
+    compare_solutions(
+        Ha_val,
+        a,
+        b,
+        t_w,
+        truncation,
+        N_x,
+        N_y,
+        dyn_visc,
+        conductivity_f,
+        conductivity_w,
+        permeability,
+        average_velocity,
+    )
+
+
+print("\nVarying t_w:")
+Ha = 500
+t_w = [0.01, 0.1, 1, 2, 5]
+conductivity_w = 1
+truncation = 100
+
+for tw_val in t_w:
+    print(
+        f"Ha = {Ha}, t_w = {tw_val}, sigma_w = {conductivity_w}, Fourier terms = {truncation}"
+    )
+
+    compare_solutions(
+        Ha,
+        a,
+        b,
+        tw_val,
+        truncation,
+        N_x,
+        N_y,
+        dyn_visc,
+        conductivity_f,
+        conductivity_w,
+        permeability,
+        average_velocity,
+    )
+
+
+print("\nVarying sigma_w:")
+Ha = 500
+t_w = 0.1
+conductivity_w = [0.01, 0.1, 1, 2, 5, 10, 100, 1e3, 1e4]
+truncation = 100
+
+for sigmaw_val in conductivity_w:
+    print(
+        f"Ha = {Ha}, t_w = {t_w}, sigma_w = {sigmaw_val}, Fourier terms = {truncation}"
+    )
+
+    compare_solutions(
+        Ha,
+        a,
+        b,
+        t_w,
+        truncation,
+        N_x,
+        N_y,
+        dyn_visc,
+        conductivity_f,
+        sigmaw_val,
+        permeability,
+        average_velocity,
+    )
