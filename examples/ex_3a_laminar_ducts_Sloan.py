@@ -174,8 +174,11 @@ def compare_solutions(
 
     diff_uz = sloan_case.scaled_velocity_z - hunt_case.scaled_velocity_z
 
-    rmse = mhdtools.statistics.rmse(diff_uz)
-    print(f"Comparison - RMSE: {rmse}")
+    frmse = mhdtools.statistics.fraction_rmse_comparison(
+        sloan_case.scaled_velocity_z, hunt_case.scaled_velocity_z
+    )
+
+    print(f"Comparison - %RMSE: {frmse*100:.3f}%")
 
     return x, y, diff_uz
 
