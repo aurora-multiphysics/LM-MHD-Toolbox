@@ -758,7 +758,7 @@ class Sloan:
     def _wEtaIntegral(self, D_n, E_n, alpha_n, beta_n, P_n):
         numer = 0.5 * (
             (D_n / alpha_n) * (1 - np.exp(-2 * alpha_n))
-            + (E_n / beta_n) * (np.exp(2 * beta_n) - 1)
+            - (E_n / beta_n) * (np.exp(2 * beta_n) - 1)
         )
         wEtaIntegral = 1 - (numer / P_n)
         return wEtaIntegral
