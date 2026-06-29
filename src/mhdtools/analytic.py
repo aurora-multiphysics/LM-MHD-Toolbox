@@ -858,26 +858,20 @@ class Sloan:
             )
         self._calculate_scaled_velocity()
         self._calculate_scaled_B_field()
-        self._calculate_scaled_H_field()
 
     def _calculate_scaled_velocity(self):
         self.scaled_velocity_z = (
             self.w * self.scaled_pressure_grad * (self.a**2) / self.dyn_visc
         )
 
-        # unsure about this
-
     def _calculate_scaled_B_field(self):
-        self.scaled_H_field_z = (
+        self.scaled_B_field_z = (
             self.B
             * self.scaled_pressure_grad
             * self.a**2
             * np.sqrt(self.conductivity_f / self.dyn_visc)
+            * self.permeability
         )
-
-    # unsure about this
-    def _calculate_scaled_H_field(self):
-        self.scaled_B_field_z = self.scaled_H_field_z / self.permeability
 
 
 class Sloan_66_original:
@@ -1315,26 +1309,20 @@ class Sloan_66_original:
             )
         self._calculate_scaled_velocity()
         self._calculate_scaled_B_field()
-        self._calculate_scaled_H_field()
 
     def _calculate_scaled_velocity(self):
         self.scaled_velocity_z = (
             self.w * self.scaled_pressure_grad * (self.a**2) / self.dyn_visc
         )
 
-        # unsure about this
-
     def _calculate_scaled_B_field(self):
-        self.scaled_H_field_z = (
+        self.scaled_B_field_z = (
             self.B
             * self.scaled_pressure_grad
             * self.a**2
             * np.sqrt(self.conductivity_f / self.dyn_visc)
+            * self.permeability
         )
-
-    # unsure about this
-    def _calculate_scaled_H_field(self):
-        self.scaled_B_field_z = self.scaled_H_field_z / self.permeability
 
 
 def makeXYVectors(N_x, N_y, a, b):
